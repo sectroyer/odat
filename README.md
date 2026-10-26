@@ -20,6 +20,13 @@ __ODAT linux standalone__ version at [https://github.com/quentinhardy/odat/relea
 
 Changelog
 ====
+* Version __5.2__ (__26/10/2026__):
+  * Ported from __cx_Oracle__ to __python-oracledb__. The default __thin mode__ needs no Oracle Instant Client, so ODAT now runs on Linux and macOS including __arm64__ (Apple Silicon, arm64 Kali).
+  * New global option __--thick__ for thick mode (Oracle Instant Client), still required for Native Network Encryption, databases older than 12.1 and 10G password verifiers only.
+  * New global option __--socks__ to reach a target through a SOCKS proxy (e.g. an SSH dynamic port forward). Thin mode only.
+  * New __thincheck.py__ helper to check whether thin mode can be used against a target and to test a single credential.
+  * In thin mode, listener/network errors (DPY-xxxx) are translated to the equivalent ORA-xxxxx code, and error detection uses error codes instead of English messages (works against non-English servers).
+  * Bug fix: crash when the output is redirected to a file or a pipe (terminal size).
 * Version __5.1.1__ (__27/04/2022__):
   * print a warning message when an "ORA-12519 - TNS:no appropriate service handler found" occured. This error can be triggered by the database server (listener) when too many connections have been established (when bruteforcing credentials for example). In this case, __--sleep__ option should be used (e.g. *--sleep 0.2*).
 * Version __5.1__ (__12/03/2021__):
