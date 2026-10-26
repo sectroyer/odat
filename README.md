@@ -28,7 +28,7 @@ Changelog
   * In _all_ module, a TCP connection is tested on each target before to start ODAT tests now. __--timeout-tcp-check__ can be used to manage timeout value.
   * In _all_ module, a test is done on each target now for checking if the TNS listener is well configured. This test is done after TCP connection test.
   * new global option: __--client-driver__. Allows to set the client name for database connection (__client_driver__ from __V$SESSION_CONNECT_INFO__). 
-    Useful for applications whose end-users are not aware cx_Oracle is being. used. By default, 'sql*plus' now.
+    Useful for applications whose end-users are not aware python-oracledb is being used. By default, 'sql*plus' now.
   * ODAT accepts a __sqlnet.ora__ file now. A default file is in __conf/__. The timeout TCP & OUTBOUND (TNS) connection is set to 60 seconds by default now.  
 * Version __5.0__ (__08/02/2021__):
   * Important new module: __Service Name Guesser__, for searching valid Service Names. Specific module named __*snguesser*__ and integrated in *all* module too. By default, *all* module searches all valid Service Names now after searching SIDs. SIDs can be identical to Service Name. When a Service Name is found but not a SID, Service Name can be used as a SID for connection.
@@ -192,116 +192,52 @@ Mind map - ODAT & Oracle Database pentests
 Supported Platforms and dependencies
 ====
 
-ODAT is compatible with __Linux__ only.
+ODAT runs on __Linux__ and __macOS__, including __arm64__ (Apple Silicon, arm64 Kali), because it uses
+__python-oracledb__ in __thin mode__: a pure Python driver that does __not__ require the Oracle Instant Client.
 
-__Standalone version__ exists in order to don't have need to install dependencies (see [https://github.com/quentinhardy/odat/releases/](https://github.com/quentinhardy/odat/releases/)).
-The ODAT standalone has been generated thanks to *pyinstaller*.
+__Thick mode__ (Oracle Instant Client) is still available with the global __--thick__ option. It is required
+only for:
+* servers that require __Native Network Encryption__ or data integrity (`SQLNET.ENCRYPTION_SERVER=REQUIRED` / `SQLNET.CRYPTO_CHECKSUM_SERVER=REQUIRED`),
+* databases __older than 12.1__,
+* accounts with a __10G password verifier only__.
 
-If you want to have the __development version__ installed on your computer, these following tools and dependencies are needed:
-* Langage: Python 3
-* Oracle dependancies: 
-  * Instant Oracle basic
-  * Instant Oracle sdk
-* Python libraries: 
-  * cx_Oracle
-  * passlib
-  * pycrypto
-  * python-scapy
-  * python-libnmap (new from python 5.1)    
-  * colorlog (recommended)
-  * termcolor (recommended)
-  * argcomplete (recommended)
-  * pyinstaller (recommended)
+Use __thincheck.py__ (see below) to know if thin mode can be used against a target before running ODAT.
 
-Installation (optional, for development version)
+Dependencies (Python 3):
+* __oracledb__ (replaces the deprecated cx_Oracle)
+* passlib
+* pycryptodome
+* scapy
+* python-libnmap
+* colorlog (recommended)
+* termcolor (recommended)
+* argcomplete (recommended)
+* openpyxl (for the search module xlsx export)
+* PySocks (recommended, for the __--socks__ option)
+
+Installation
 ====
 
-This part describes how to install instantclient, CX_Oracle and some others python libraries on __Ubuntu__ in order to have the ODAT development version. 
-Don't forget that an ODAT standalone version exists at [https://github.com/quentinhardy/odat/releases/](https://github.com/quentinhardy/odat/releases/): __It is not required to install something for use the standalone version__
+Thin mode needs no Oracle Instant Client, so a clone and a `pip install` are enough on Linux and macOS,
+including arm64.
 
 * Clone the repository to get the ODAT source code:
 ```bash
 git clone https://github.com/quentinhardy/odat.git
+cd odat/
 ```
 
 * Update wiki pages in this repository for getting the ODAT documentation locally:
 ```bash
-cd odat/
 git submodule init
 git submodule update
 ```
 
-* Get instant client basic, sdk (devel) and sqlplus from the Oracle web site:
-  * X64: http://www.oracle.com/technetwork/topics/linuxx86-64soft-092277.html
-  * X86: http://www.oracle.com/technetwork/topics/linuxsoft-082809.html
-  
-* For the moment (03/2021), Oracle Database instant client version 11.2 is the best version if you want to generate the ODAT standalone with pyinstaller.
-For using the ODAT development version, the last version of the Oracle client can be used (e.g. version 19).
-
-* Install *python3-dev*, *alien* and *libaio1* package (for sqlplus):
+* Install the Python dependencies, in a virtual environment (recommended):
 ```bash
-sudo apt-get install libaio1 python3-dev alien python3-pip
-```
-
-* Generate DEB files from RPM files with :
-```bash
-sudo alien --to-deb oracle-instantclient19.3-basic-???.x???.rpm
-sudo alien --to-deb oracle-instantclient19.3-devel-???.x???.rpm
-```
-
-* Install instant client basic, sdk and sqlplus:
-```bash
-sudo dpkg -i oracle-instantclient19.3-basic-???.x???.deb
-sudo dpkg -i oracle-instantclient19.3-devel_???_???.deb
-```
-
-* Put these lines in your */etc/profile* file in order to define Oracle *env* variables:
-```bash
-export ORACLE_HOME=/usr/lib/oracle/19.3/client64/
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ORACLE_HOME/lib
-export PATH=${ORACLE_HOME}bin:$PATH
-```
-
-* Restart your session (to apply env variables)
-
-* Create the */etc/ld.so.conf.d/oracle.conf* file and add the path to Oracle home:
-```
-/usr/lib/oracle/19.3/client64/lib/
-```
-
-* Update the ldpath using:
-```bash
-sudo ldconfig
-```
-
-* Install *CX_Oracle*
-```bash
-sudo -s
-source /etc/profile
-pip3 install cx_Oracle
-```
-
-* Test if all is good:
-```bash
-python3 -c 'import cx_Oracle' 
-```
-> This command should *just return* without errors.
-
-* Install some python libraries:
-```bash
-sudo apt-get install python3-scapy
-sudo pip3 install colorlog termcolor pycrypto passlib python-libnmap
-sudo pip3 install argcomplete && sudo activate-global-python-argcomplete
-```
-
-* Download and install the __development__ version of pyinstaller (http://www.pyinstaller.org/) for python 3.
-```bash
-python setup.py install
-```
-
-* or install through pip:
-```bash
-pip3 install pyinstaller
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 * Run ODAT:
@@ -309,7 +245,52 @@ pip3 install pyinstaller
 ./odat.py -h
 ```
 
-> __Good job if you have not errors:)__
+* Optionally, enable argcomplete tab completion:
+```bash
+activate-global-python-argcomplete
+```
+
+Thick mode (optional, Oracle Instant Client)
+====
+
+Only needed for Native Network Encryption, databases older than 12.1 or 10G password verifiers (see above).
+Install the Oracle Instant Client __Basic__ package for your platform
+([Linux x86-64](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html),
+[Linux ARM64](https://www.oracle.com/database/technologies/instant-client/linux-arm-aarch64-downloads.html),
+[macOS](https://www.oracle.com/database/technologies/instant-client/macos-intel-x86-downloads.html)),
+make it reachable (e.g. `ldconfig` on Linux or `LD_LIBRARY_PATH`/`DYLD_LIBRARY_PATH`), then add __--thick__:
+```bash
+./odat.py all -s 10.0.0.5 -p 1521 --thick
+```
+
+Checking if thin mode can be used (thincheck.py)
+====
+
+```bash
+./thincheck.py -s 10.0.0.5 -p 1521 -n ORCLPDB1
+```
+
+It connects with a random non-existent username (which can not lock a real account):
+* __ORA-01017__: thin mode can be used (no Native Network Encryption required, database >= 12.1).
+* __DPY-3001__: Native Network Encryption or data integrity is required, use __--thick__.
+* __DPY-3010__: database older than 12.1, use __--thick__.
+
+A single credential can be tested with __-U__ (and __-P__), which also prints the database version, the
+network services, the roles and the system privileges of the account:
+```bash
+./thincheck.py -s 10.0.0.5 -p 1521 -n ORCLPDB1 -U scott
+```
+
+Going through a SOCKS proxy (--socks)
+====
+
+Database connections and TNS listener commands can go through a SOCKS proxy, for example an SSH dynamic
+port forward (`ssh -D 1080 jumphost`). Thin mode only (thick mode uses its own sockets: use proxychains).
+```bash
+./odat.py all -s db.internal -p 1521 --socks socks5h://127.0.0.1:1080
+```
+With __socks5h://__ (or __socks4a://__), host names are resolved by the proxy, so internal host names that
+only resolve on the remote network can be used.
 
 Docs and examples
 ====

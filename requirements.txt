@@ -1,0 +1,10 @@
+oracledb
+passlib
+pycryptodome
+scapy
+python-libnmap
+colorlog
+termcolor
+argcomplete
+openpyxl
+PySocks
