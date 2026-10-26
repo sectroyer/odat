@@ -8,6 +8,7 @@ from sys import stdout
 from datetime import datetime
 import os.path, oracledb
 from OracleDriver import connect as oracleConnect
+from SocksProxy import remoteDnsEnabled
 if os.name == 'nt':
 	import ntpath
 from subprocess import STDOUT, Popen, PIPE
@@ -173,7 +174,7 @@ def ipOrNameServerHasBeenGiven(args):
 	if ('server' in args and args['server'] != None) or \
 	   ('hostlist' in args and args['hostlist'] != None) or \
 	   ('nmap-file' in args and args['nmap-file'] != None):
-		if (args['server']!=None):
+		if (args['server']!=None) and remoteDnsEnabled() == False:
 			try:
 				inet_aton(args['server'])
 			except Exception as e:

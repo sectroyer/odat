@@ -114,7 +114,7 @@ class OracleDatabase:
         except Exception as e:
             self.__warnIfThickModeRequired__(e)
             if self.ERROR_CONN_IMPOSS in str(e) or self.ERROR_UNABLE_TO_ACQUIRE_ENV in str(e):
-                logging.critical("Impossible to connect to the remost host")
+                logging.critical("Impossible to connect to the remote host: {0}".format(self.cleanError(e)))
                 exit(EXIT_BAD_CONNECTION)
             elif self.ERROR_NOT_SYSDBA in str(e): 
                 logging.info("Connection as SYS should be as SYSDBA or SYSOPER, try to connect as SYSDBA")

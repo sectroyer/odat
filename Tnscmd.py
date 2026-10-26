@@ -60,10 +60,8 @@ class Tnscmd():
 		sendbuf = b''.join([struct.pack('B', val) for val in packet])
 		#logging.debug("connect to this service")
 		try: 
-			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			s.settimeout(TIMEOUT_TNS_CMD)
 			logging.debug("Connection to {0}:{1}".format(self.args['server'],int(self.args['port'])))
-			s.connect((self.args['server'],int(self.args['port'])))
+			s = socket.create_connection((self.args['server'],int(self.args['port'])), TIMEOUT_TNS_CMD)
 			self.localIP = s.getsockname()[0]
 			logging.debug("writing {0} bytes: {1}".format(len(sendbuf),repr(sendbuf)))
 			s.sendall(sendbuf)

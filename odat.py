@@ -36,6 +36,7 @@ from Utils import (areEquals,
 
 from Constants import *
 from OracleDriver import initDriver
+from SocksProxy import enableSocksProxy
 from Output import Output
 from Tnscmd import runTnsCmdModule
 from UtlFile import UtlFile, runUtlFileModule
@@ -473,6 +474,7 @@ def main():
 	PPconnection.add_argument('--client-driver', dest='client-driver', required=False, default="SQL*PLUS", help='Set client driver name (default: %(default)s)')
 	PPconnection.add_argument('--sysdba', dest='SYSDBA', action='store_true', default=False, help='connection as SYSDBA')
 	PPconnection.add_argument('--sysoper', dest='SYSOPER', action='store_true', default=False, help='connection as SYSOPER')
+	PPconnection.add_argument('--socks', dest='socks', required=False, default=None, metavar='URL', help='SOCKS proxy, e.g. socks5h://127.0.0.1:1080 (socks5h/socks4a: DNS resolution by the proxy). Thin mode only')
 	PPconnection.add_argument('--thick', dest='thick', action='store_true', default=False, help='use thick mode (Oracle Instant Client required), needed for Native Network Encryption, databases < 12.1 and 10G password verifiers')
 	#1.2- Parent parser: output options
 	PPoutput = argparse.ArgumentParser(add_help=False,formatter_class=myFormatterClass)
@@ -785,6 +787,11 @@ def main():
 	#4- Configure logging and output
 	configureLogging(args)
 	args['print'] = Output(args)
+	if args.get('socks') != None:
+		if args.get('thick', False) == True:
+			logging.warning("The SOCKS proxy is not used by the Oracle client in thick mode (use proxychains). It is used by TNS listener modules only")
+		if enableSocksProxy(args['socks']) == False:
+			exit(EXIT_BAD_CONNECTION)
 	#Start the good function
 	if 'auditType' in args and (args['auditType']=='unwrapper' or args['auditType']=='clean'):
 		pass

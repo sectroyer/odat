@@ -110,6 +110,8 @@ def translateError(e):
 		return OracleDriverError(m.group(1), e)
 	code = getErrorCode(e)
 	if code == "DPY-6005":
+		if type(cause).__module__ == "socks":
+			return OracleDriverError("ORA-12541", e) #SOCKS proxy error (proxy down, target refused or unreachable)
 		if isinstance(cause, ConnectionRefusedError):
 			return OracleDriverError("ORA-12541", e) #TNS:no listener
 		if isinstance(cause, socket.gaierror):
