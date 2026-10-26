@@ -22,6 +22,7 @@ except ImportError:
 	COLORLOG_AVAILABLE = False
 
 import argparse, logging, platform, string, os, sys
+from getpass import getpass
 from pathlib import Path
 from libnmap.parser import NmapParser
 from Utils import (areEquals,
@@ -800,12 +801,21 @@ def main():
 	cfgPath = str(Path("./conf/").resolve())
 	if initDriver(thick=args.get('thick', False), configDir=cfgPath, driverName=args.get('client-driver', "SQL*PLUS")) == False:
 		exit(EXIT_BAD_CONNECTION)
+	#Ask the password when a username is given without -P: not visible in the shell history and the process list
+	passwordPrompted = False
+	if args.get('user') != None and args.get('password') == None:
+		try:
+			args['password'] = getpass("Password for {0}: ".format(args['user']))
+			passwordPrompted = True
+		except (EOFError, KeyboardInterrupt):
+			print()
+			exit(EXIT_MISS_ARGUMENT)
 	msg = '[+] Target: {0}:{1}'.format(args['server'], args['port'])
 	if args.get('sid') is not None:
 		msg += ' (SID: {0})'.format(args['sid'])
 	elif args.get('serviceName') is not None:
 		msg += ' (Service Name: {0})'.format(args['serviceName'])
-	if args.get('user') is not None and args.get('password') is not None:
+	if args.get('user') is not None and args.get('password') is not None and passwordPrompted == False:
 		msg += ' as {0}/{1}'.format(args['user'], args['password'])
 	elif args.get('user') is not None:
 		msg += ' as {0}'.format(args['user'])
