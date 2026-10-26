@@ -399,7 +399,7 @@ class Search (OracleDatabase):
 		- DDL/DML (CREATE, INSERT, UPDATE, DELETE, etc.)
 		- PL/SQL blocks (BEGIN...END / DECLARE...END) with DBMS_OUTPUT support
 		"""
-		print("Ctrl-D to close the SQL shell")
+		print("Ctrl-D to close the SQL shell. An empty line executes the request (multi-line requests are allowed)")
 		while True:
 			theLine = None
 			allLines = ""
@@ -410,7 +410,8 @@ class Search (OracleDatabase):
 				except EOFError:
 					print("\nSQL shell closed")
 					return True
-				allLines += theLine
+				#Keep line breaks: lines of a multi-line request must not be glued together
+				allLines += theLine + "\n"
 			if allLines != "":
 				# Strip trailing semicolon which causes driver errors on regular SQL
 				cleanedQuery = allLines.strip()
