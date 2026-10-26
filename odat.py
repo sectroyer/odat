@@ -144,17 +144,16 @@ def checkIfWorkingTnsListener(args, timeoutTCP=10):
 	Use server and port of args only for testing.
 	'''
 	args['print'].printMessage("Checking if target {0}:{1} is well configured for a connection...".format(args['server'], args['port']))
-	socks = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	socks.settimeout(timeoutTCP)
 	logging.debug('Trying a TCP connection to {0} port {1}'.format(args['server'], args['port']))
 	try:
-		socks.connect((args['server'], int(args['port'])))
+		#socket.create_connection() goes through the SOCKS proxy when --socks is used
+		sock = socket.create_connection((args['server'], int(args['port'])), timeoutTCP)
 		logging.debug("Connection established to server")
 	except Exception as e:
 		args['print'].badNews("Impossible to establish a TCP connection to {0}:{1}. This target is SKIPPED".format(args['server'], args['port']))
 		logging.debug("TCP error: {0}".format(str(e)))
 		return False
-	socks.close()
+	sock.close()
 	odb = OracleDatabase(args)
 	statusWorking = odb.isWorkingTnsListener()
 	if statusWorking == False:
