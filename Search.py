@@ -412,7 +412,7 @@ class Search (OracleDatabase):
 					return True
 				allLines += theLine
 			if allLines != "":
-				# Strip trailing semicolon which causes cx_Oracle errors on regular SQL
+				# Strip trailing semicolon which causes driver errors on regular SQL
 				cleanedQuery = allLines.strip()
 				if self.__isPLSQLBlock__(cleanedQuery):
 					# PL/SQL block: use __execPLSQLwithDbmsOutput__ to capture DBMS_OUTPUT

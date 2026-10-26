@@ -21,7 +21,7 @@ try:
 except ImportError:
 	COLORLOG_AVAILABLE = False
 
-import argparse, logging, platform, cx_Oracle, string, os, sys
+import argparse, logging, platform, string, os, sys
 from pathlib import Path
 from libnmap.parser import NmapParser
 from Utils import (areEquals,
@@ -35,6 +35,7 @@ from Utils import (areEquals,
 				   getHostsFromFile)
 
 from Constants import *
+from OracleDriver import initDriver
 from Output import Output
 from Tnscmd import runTnsCmdModule
 from UtlFile import UtlFile, runUtlFileModule
@@ -472,6 +473,7 @@ def main():
 	PPconnection.add_argument('--client-driver', dest='client-driver', required=False, default="SQL*PLUS", help='Set client driver name (default: %(default)s)')
 	PPconnection.add_argument('--sysdba', dest='SYSDBA', action='store_true', default=False, help='connection as SYSDBA')
 	PPconnection.add_argument('--sysoper', dest='SYSOPER', action='store_true', default=False, help='connection as SYSOPER')
+	PPconnection.add_argument('--thick', dest='thick', action='store_true', default=False, help='use thick mode (Oracle Instant Client required), needed for Native Network Encryption, databases < 12.1 and 10G password verifiers')
 	#1.2- Parent parser: output options
 	PPoutput = argparse.ArgumentParser(add_help=False,formatter_class=myFormatterClass)
 	PPoutput._optionals.title = "output configurations"
@@ -789,15 +791,9 @@ def main():
 	else:
 		if ipOrNameServerHasBeenGiven(args) == False :
 			return EXIT_MISS_ARGUMENT
-	try:
-		cfgPath = str(Path("./conf/").resolve())
-		logging.info(f"Using this folder as TNS_ADMIN env var : {cfgPath}")
-		cx_Oracle.init_oracle_client(config_dir=cfgPath, driver_name=args['client-driver'], error_url= "")
-		logging.info("CX_Oracle is well configured according to parameters")
-	except Exception as e:
-		logging.error("Impossible to load local configuration files in conf/ and to set driver_name: {0}".format(str(e)))
-	logging.debug("cx_Oracle Version: {0}".format(cx_Oracle.version))
-	logging.debug("Oracle Client Version: {0}".format(cx_Oracle.clientversion()))
+	cfgPath = str(Path("./conf/").resolve())
+	if initDriver(thick=args.get('thick', False), configDir=cfgPath, driverName=args.get('client-driver', "SQL*PLUS")) == False:
+		exit(EXIT_BAD_CONNECTION)
 	msg = '[+] Target: {0}:{1}'.format(args['server'], args['port'])
 	if args.get('sid') is not None:
 		msg += ' (SID: {0})'.format(args['sid'])

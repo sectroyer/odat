@@ -6,7 +6,8 @@ from socket import gethostbyname
 from sys import exit
 from sys import stdout
 from datetime import datetime
-import os.path, cx_Oracle
+import os.path, oracledb
+from OracleDriver import connect as oracleConnect
 if os.name == 'nt':
 	import ntpath
 from subprocess import STDOUT, Popen, PIPE
@@ -87,17 +88,17 @@ def areEquals(o1,o2):
 		else : return False
 	else : logging.error("Bad comparison in the areEquals function: o1:{0}, o2:{1}".format(type(o1),type(o2)))
 
-def getOracleConnection(args, connectId):
+def getOracleConnection(args, user, password, dsn):
 	'''
-	Return an Oracle object connected to the database thanks to the Oracle connection string (connectId)
+	Return an Oracle object connected to the database thanks to user, password and the Oracle connect descriptor (dsn)
 	'''
-	try: 
-		if args['SYSDBA'] == True :	
-			return cx_Oracle.connect(connectId, mode=cx_Oracle.SYSDBA)
-		elif args['SYSOPER'] == True :	
-			return cx_Oracle.connect(connectId, mode=cx_Oracle.SYSOPER)
+	try:
+		if args['SYSDBA'] == True :
+			return oracleConnect(user, password, dsn, mode=oracledb.AUTH_MODE_SYSDBA)
+		elif args['SYSOPER'] == True :
+			return oracleConnect(user, password, dsn, mode=oracledb.AUTH_MODE_SYSOPER)
 		else :
-			return cx_Oracle.connect(connectId)
+			return oracleConnect(user, password, dsn)
 	except Exception as e:
 		logging.error("Impossible to connect to the database: {0}".format(str(e)))
 		exit(-1)
