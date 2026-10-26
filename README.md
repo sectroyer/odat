@@ -3,6 +3,8 @@
 | __quentin.hardy@protonmail.com__  |
 | __quentin.hardy@bt.com__    |
 
+python-oracledb thin mode fork by __Michał Majchrowicz__ (sectroyer@gmail.com).
+
 
 ODAT 
 ====

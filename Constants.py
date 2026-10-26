@@ -16,8 +16,9 @@ DESCRIPTION = ""\
 
 By Quentin Hardy (quentin.hardy@protonmail.com or quentin.hardy@bt.com)
 
-Fork: ported from cx_Oracle to python-oracledb (thin mode, no Oracle Instant Client
-required, runs on arm64). Added --thick, --socks (SOCKS proxy) and thincheck.py.
+Fork by Michał Majchrowicz (sectroyer@gmail.com): ported from cx_Oracle to python-oracledb
+(thin mode, no Oracle Instant Client required, runs on arm64). Added --thick, --socks
+(SOCKS proxy) and thincheck.py.
 """
 CURRENT_VERSION = "Version 5.2 - 2026/10/26 (python-oracledb thin mode fork)"
 DEFAULT_SID_MIN_SIZE = 1
