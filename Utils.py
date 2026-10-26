@@ -11,7 +11,7 @@ if os.name == 'nt':
 	import ntpath
 from subprocess import STDOUT, Popen, PIPE
 from socket import inet_aton
-import os, random, string
+import os, random, string, shutil
 
 def generateUniqueNameFile ():
 	'''
@@ -216,9 +216,10 @@ def checkOptionsGivenByTheUser(args,operationsAllowed,checkSID=True,checkAccount
 
 def getScreenSize ():
 	'''
-	Returns screen size (columns, lines)
+	Returns screen size (lines, columns)
+	Default size (24, 80) when the output is not a terminal (e.g. redirected to a file or a pipe)
 	'''
-	size = os.get_terminal_size()
+	size = shutil.get_terminal_size(fallback=(80, 24))
 	return (size.lines, size.columns)
 	
 def stringToLinePadded(string, padValue=" "):
