@@ -412,7 +412,7 @@ class Search (OracleDatabase):
 					return True
 				#Keep line breaks: lines of a multi-line request must not be glued together
 				allLines += theLine + "\n"
-			if allLines != "":
+			if allLines.strip() != "":
 				# Strip trailing semicolon which causes driver errors on regular SQL
 				cleanedQuery = allLines.strip()
 				if self.__isPLSQLBlock__(cleanedQuery):
