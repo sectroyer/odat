@@ -491,6 +491,11 @@ class Search (OracleDatabase):
 					else:
 						logging.debug("Skipping SQL*Plus directive: {0}".format(stripped))
 					continue
+			elif stripped == "" and not self.__isPLSQLBlock__(current.strip()):
+				#blank line ends a non-PL/SQL statement (files that separate by blank line, no ';')
+				runStmt(current.strip()); count += 1
+				current = ""
+				continue
 			current += line
 			if stripped.endswith(";") and not self.__isPLSQLBlock__(current.strip()):
 				#end of a regular SQL statement
