@@ -108,6 +108,10 @@ class Tnscmd():
 				hexVersionList = struct.unpack('cc2sc2s',hexVsnnum.encode())
 			elif len(hexVsnnum) == 8:
 				hexVersionList = struct.unpack('2sc2sc2s',hexVsnnum.encode())
+			else:
+				#e.g. VSNNUM=0 when the listener refuses the command (ERR=12618)
+				logging.info("Unexpected VSNNUM value: {0}".format(vsnnum[0]))
+				return "Unknown"
 			for v in hexVersionList : self.version += str(int(v,16)) + '.'
 			return self.version
 		
