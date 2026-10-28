@@ -399,6 +399,11 @@ class Search (OracleDatabase):
 		- DDL/DML (CREATE, INSERT, UPDATE, DELETE, etc.)
 		- PL/SQL blocks (BEGIN...END / DECLARE...END) with DBMS_OUTPUT support
 		"""
+		try:
+			#Enables up/down history and left/right line editing for input() on Unix
+			import readline
+		except ImportError:
+			pass
 		print("Ctrl-D to close the SQL shell. An empty line executes the request (multi-line requests are allowed)")
 		while True:
 			theLine = None
