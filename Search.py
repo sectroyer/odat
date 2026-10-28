@@ -420,6 +420,21 @@ class Search (OracleDatabase):
 			if allLines.strip() != "":
 				self.__runOneStatement__(allLines.strip())
 
+	def __emit__(self, text):
+		"""
+		Print text to stdout and, when --output-file is set, append it there too.
+		Lets the interactive shell and the --sql-file runner save their results.
+		"""
+		text = str(text)
+		print(text)
+		outputFile = self.args.get('outputFile')
+		if outputFile:
+			try:
+				with open(outputFile, 'a') as f:
+					f.write(text + "\n")
+			except Exception as e:
+				logging.error("Impossible to write to the output file {0}: {1}".format(outputFile, self.cleanError(e)))
+
 	def __runOneStatement__(self, cleanedQuery):
 		"""
 		Execute a single SQL statement or PL/SQL block and print the result.
@@ -429,25 +444,25 @@ class Search (OracleDatabase):
 			# PL/SQL block: use __execPLSQLwithDbmsOutput__ to capture DBMS_OUTPUT
 			results = self.__execPLSQLwithDbmsOutput__(cleanedQuery, addLineBreak=True)
 			if isinstance(results, Exception):
-				print(results)
+				self.__emit__(results)
 			elif results == "":
-				print("PL/SQL block executed successfully (no DBMS_OUTPUT)")
+				self.__emit__("PL/SQL block executed successfully (no DBMS_OUTPUT)")
 			else:
-				print(results)
+				self.__emit__(results)
 		else:
 			# Regular SQL query - strip trailing semicolon which causes driver errors
 			if cleanedQuery.endswith(';'):
 				cleanedQuery = cleanedQuery[:-1]
 			results = self.__execQuery__(query=cleanedQuery, getColumnNames=True, stringOnly=True)
 			if isinstance(results, Exception):
-				print(results)
+				self.__emit__(results)
 			elif results == [()]:
-				print("Executed successfully")
+				self.__emit__("Executed successfully")
 			else:
 				table = Texttable(max_width=getScreenSize()[1])
 				table.set_deco(Texttable.HEADER)
 				table.add_rows(results)
-				print(table.draw())
+				self.__emit__(table.draw())
 
 	def runSqlFile(self, filename):
 		"""
@@ -463,13 +478,20 @@ class Search (OracleDatabase):
 		except Exception as e:
 			logging.error("Impossible to read the SQL file {0}: {1}".format(filename, self.cleanError(e)))
 			return False
+		#truncate the output file once so re-runs don't append to stale results
+		outputFile = self.args.get('outputFile')
+		if outputFile:
+			try:
+				open(outputFile, 'w').close()
+			except Exception as e:
+				logging.error("Impossible to open the output file {0}: {1}".format(outputFile, self.cleanError(e)))
 		#SQL*Plus client directives that are not SQL - skipped when not inside a statement
 		SQLPLUS_DIRECTIVES = ('SET','COLUMN','COL','PROMPT','WHENEVER','SPOOL','DEFINE','UNDEFINE',
 							  'ACCEPT','PAUSE','CLEAR','TTITLE','BTITLE','BREAK','COMPUTE','SHOW',
 							  'REM','REMARK','CONNECT','DISCONNECT','STORE','SAVE','START','VARIABLE')
 		def runStmt(stmt):
 			#Execute a completed statement inline so PROMPT headers interleave with output
-			print("SQL> {0}".format(stmt))
+			self.__emit__("SQL> {0}".format(stmt))
 			self.__runOneStatement__(stmt)
 		count, current = 0, ""
 		for line in lines:
@@ -487,7 +509,7 @@ class Search (OracleDatabase):
 				if firstword in SQLPLUS_DIRECTIVES:
 					if firstword == "PROMPT":
 						#keep PROMPT text visible in the output
-						print(stripped[6:].strip())
+						self.__emit__(stripped[6:].strip())
 					else:
 						logging.debug("Skipping SQL*Plus directive: {0}".format(stripped))
 					continue
