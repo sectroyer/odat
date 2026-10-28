@@ -463,28 +463,42 @@ class Search (OracleDatabase):
 		except Exception as e:
 			logging.error("Impossible to read the SQL file {0}: {1}".format(filename, self.cleanError(e)))
 			return False
-		statements, current = [], ""
+		#SQL*Plus client directives that are not SQL - skipped when not inside a statement
+		SQLPLUS_DIRECTIVES = ('SET','COLUMN','COL','PROMPT','WHENEVER','SPOOL','DEFINE','UNDEFINE',
+							  'ACCEPT','PAUSE','CLEAR','TTITLE','BTITLE','BREAK','COMPUTE','SHOW',
+							  'REM','REMARK','CONNECT','DISCONNECT','STORE','SAVE','START','VARIABLE')
+		def runStmt(stmt):
+			#Execute a completed statement inline so PROMPT headers interleave with output
+			print("SQL> {0}".format(stmt))
+			self.__runOneStatement__(stmt)
+		count, current = 0, ""
 		for line in lines:
 			stripped = line.strip()
 			if stripped == "/":
 				#SQL*Plus terminator for PL/SQL blocks
-				if current.strip() != "": statements.append(current.strip())
+				if current.strip() != "": runStmt(current.strip()); count += 1
 				current = ""
 				continue
-			if stripped.startswith("--") and current.strip() == "":
-				#skip standalone comment lines between statements
-				continue
+			if current.strip() == "":
+				#between statements: skip comments and SQL*Plus-only directives
+				if stripped == "" or stripped.startswith("--"):
+					continue
+				firstword = stripped.split(None, 1)[0].upper() if stripped else ""
+				if firstword in SQLPLUS_DIRECTIVES:
+					if firstword == "PROMPT":
+						#keep PROMPT text visible in the output
+						print(stripped[6:].strip())
+					else:
+						logging.debug("Skipping SQL*Plus directive: {0}".format(stripped))
+					continue
 			current += line
 			if stripped.endswith(";") and not self.__isPLSQLBlock__(current.strip()):
 				#end of a regular SQL statement
-				statements.append(current.strip())
+				runStmt(current.strip()); count += 1
 				current = ""
 		if current.strip() != "":
-			statements.append(current.strip())
-		logging.info("Running {0} statement(s) from {1}".format(len(statements), filename))
-		for stmt in statements:
-			print("SQL> {0}".format(stmt))
-			self.__runOneStatement__(stmt)
+			runStmt(current.strip()); count += 1
+		logging.info("Ran {0} statement(s) from {1}".format(count, filename))
 		return True
 
 	def getAllPrivs(self):
