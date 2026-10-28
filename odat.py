@@ -685,6 +685,7 @@ def main():
 	PPsearch.add_argument('--dump',dest='dump',nargs='+',default=None,metavar='target',help='dump table data. Accepts TABLE, OWNER.TABLE, TABLE:COL1,COL2 or OWNER.TABLE:COL1,COL2')
 	PPsearch.add_argument('--dump-file',dest='dump-file',default=None,metavar='filename',help='write output to filename.csv and filename.xlsx (extension is added automatically). Each table is a separate sheet in xlsx. Compatible with --dump and --desc-tables only')
 	PPsearch.add_argument('--sql-shell', dest='sql-shell', action='store_true',help="start a minimal interactive SQL shell")
+	PPsearch.add_argument('--sql-file', dest='sql-file', default=None, metavar="FILE", help="run SQL statements from a file (separated by ';' or a line with '/')")
 	PPsearch.add_argument('--test-module',dest='test-module',action='store_true',help='test the module before use it')
 	#1.22- Parent parser: unwrapper
 	PPunwrapper = argparse.ArgumentParser(add_help=False,formatter_class=myFormatterClass)

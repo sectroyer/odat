@@ -418,31 +418,74 @@ class Search (OracleDatabase):
 				#Keep line breaks: lines of a multi-line request must not be glued together
 				allLines += theLine + "\n"
 			if allLines.strip() != "":
-				# Strip trailing semicolon which causes driver errors on regular SQL
-				cleanedQuery = allLines.strip()
-				if self.__isPLSQLBlock__(cleanedQuery):
-					# PL/SQL block: use __execPLSQLwithDbmsOutput__ to capture DBMS_OUTPUT
-					results = self.__execPLSQLwithDbmsOutput__(cleanedQuery, addLineBreak=True)
-					if isinstance(results, Exception):
-						print(results)
-					elif results == "":
-						print("PL/SQL block executed successfully (no DBMS_OUTPUT)")
-					else:
-						print(results)
-				else:
-					# Regular SQL query
-					if cleanedQuery.endswith(';'):
-						cleanedQuery = cleanedQuery[:-1]
-					results = self.__execQuery__(query=cleanedQuery, getColumnNames=True, stringOnly=True)
-					if isinstance(results, Exception):
-						print(results)
-					elif results == [()]:
-						print("Executed successfully")
-					else:
-						table = Texttable(max_width=getScreenSize()[1])
-						table.set_deco(Texttable.HEADER)
-						table.add_rows(results)
-						print(table.draw())
+				self.__runOneStatement__(allLines.strip())
+
+	def __runOneStatement__(self, cleanedQuery):
+		"""
+		Execute a single SQL statement or PL/SQL block and print the result.
+		Shared by the interactive shell and the --sql-file runner.
+		"""
+		if self.__isPLSQLBlock__(cleanedQuery):
+			# PL/SQL block: use __execPLSQLwithDbmsOutput__ to capture DBMS_OUTPUT
+			results = self.__execPLSQLwithDbmsOutput__(cleanedQuery, addLineBreak=True)
+			if isinstance(results, Exception):
+				print(results)
+			elif results == "":
+				print("PL/SQL block executed successfully (no DBMS_OUTPUT)")
+			else:
+				print(results)
+		else:
+			# Regular SQL query - strip trailing semicolon which causes driver errors
+			if cleanedQuery.endswith(';'):
+				cleanedQuery = cleanedQuery[:-1]
+			results = self.__execQuery__(query=cleanedQuery, getColumnNames=True, stringOnly=True)
+			if isinstance(results, Exception):
+				print(results)
+			elif results == [()]:
+				print("Executed successfully")
+			else:
+				table = Texttable(max_width=getScreenSize()[1])
+				table.set_deco(Texttable.HEADER)
+				table.add_rows(results)
+				print(table.draw())
+
+	def runSqlFile(self, filename):
+		"""
+		Run SQL statements from a file. Statements are separated by a line
+		containing only '/' or by ';' at the end of a line (SQL*Plus style).
+		Comment lines (-- ...) and empty lines are ignored between statements.
+		Return True when finished.
+		"""
+		try:
+			f = open(filename)
+			lines = f.readlines()
+			f.close()
+		except Exception as e:
+			logging.error("Impossible to read the SQL file {0}: {1}".format(filename, self.cleanError(e)))
+			return False
+		statements, current = [], ""
+		for line in lines:
+			stripped = line.strip()
+			if stripped == "/":
+				#SQL*Plus terminator for PL/SQL blocks
+				if current.strip() != "": statements.append(current.strip())
+				current = ""
+				continue
+			if stripped.startswith("--") and current.strip() == "":
+				#skip standalone comment lines between statements
+				continue
+			current += line
+			if stripped.endswith(";") and not self.__isPLSQLBlock__(current.strip()):
+				#end of a regular SQL statement
+				statements.append(current.strip())
+				current = ""
+		if current.strip() != "":
+			statements.append(current.strip())
+		logging.info("Running {0} statement(s) from {1}".format(len(statements), filename))
+		for stmt in statements:
+			print("SQL> {0}".format(stmt))
+			self.__runOneStatement__(stmt)
+		return True
 
 	def getAllPrivs(self):
 		'''
@@ -636,7 +679,7 @@ def runSearchModule(args):
 	Run the Search module
 	'''
 	status = True
-	if checkOptionsGivenByTheUser(args,["test-module","column-names","pwd-column-names","desc-tables","without-example","sql-shell",'basic-info','dump']) == False : return EXIT_MISS_ARGUMENT
+	if checkOptionsGivenByTheUser(args,["test-module","column-names","pwd-column-names","desc-tables","without-example","sql-shell","sql-file",'basic-info','dump']) == False : return EXIT_MISS_ARGUMENT
 	search = Search(args)
 	status = search.connection(stopIfError=True)
 	if args['test-module'] == True :
@@ -687,3 +730,6 @@ def runSearchModule(args):
 	if args['sql-shell'] == True:
 		args['print'].title("Starting an interactive SQL shell")
 		search.startInteractiveSQLShell()
+	if args['sql-file'] != None:
+		args['print'].title("Running SQL statements from {0}".format(args['sql-file']))
+		search.runSqlFile(args['sql-file'])
