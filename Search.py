@@ -408,10 +408,13 @@ class Search (OracleDatabase):
 		while True:
 			theLine = None
 			allLines = ""
-			print("SQL> ", end='')
 			while theLine != "":
 				try:
-					theLine = input()
+					# Pass the prompt to input/readline instead of printing it
+					# separately. GNU readline needs the prompt length to redraw a
+					# recalled history line at the correct cursor position.
+					prompt = "SQL> " if allLines == "" else "  > "
+					theLine = input(prompt)
 				except EOFError:
 					print("\nSQL shell closed")
 					return True
